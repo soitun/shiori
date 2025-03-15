@@ -98,6 +98,74 @@ func (d *BookmarksDomain) UpdateBookmarkCache(ctx context.Context, bookmark mode
 	return &processedBookmark, nil
 }
 
+// BulkUpdateBookmarkTags updates tags for multiple bookmarks using tag IDs
+func (d *BookmarksDomain) BulkUpdateBookmarkTags(ctx context.Context, bookmarkIDs []int, tagIDs []int) error {
+	if len(bookmarkIDs) == 0 {
+		return nil
+	}
+
+	// Call the database method directly
+	err := d.deps.Database().BulkUpdateBookmarkTags(ctx, bookmarkIDs, tagIDs)
+	if err != nil {
+		return fmt.Errorf("failed to update bookmark tags: %w", err)
+	}
+
+	return nil
+}
+
+// AddTagToBookmark adds a tag to a bookmark
+func (d *BookmarksDomain) AddTagToBookmark(ctx context.Context, bookmarkID int, tagID int) error {
+	// Check if bookmark exists
+	exists, err := d.BookmarkExists(ctx, bookmarkID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return model.ErrBookmarkNotFound
+	}
+
+	// Check if tag exists
+	exists, err = d.deps.Domains().Tags().TagExists(ctx, tagID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return model.ErrTagNotFound
+	}
+
+	// Add tag to bookmark
+	return d.deps.Database().AddTagToBookmark(ctx, bookmarkID, tagID)
+}
+
+// RemoveTagFromBookmark removes a tag from a bookmark
+func (d *BookmarksDomain) RemoveTagFromBookmark(ctx context.Context, bookmarkID int, tagID int) error {
+	// Check if bookmark exists
+	exists, err := d.BookmarkExists(ctx, bookmarkID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return model.ErrBookmarkNotFound
+	}
+
+	// Check if tag exists
+	exists, err = d.deps.Domains().Tags().TagExists(ctx, tagID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return model.ErrTagNotFound
+	}
+
+	// Remove tag from bookmark
+	return d.deps.Database().RemoveTagFromBookmark(ctx, bookmarkID, tagID)
+}
+
+// BookmarkExists checks if a bookmark with the given ID exists
+func (d *BookmarksDomain) BookmarkExists(ctx context.Context, id int) (bool, error) {
+	return d.deps.Database().BookmarkExists(ctx, id)
+}
+
 func NewBookmarksDomain(deps model.Dependencies) *BookmarksDomain {
 	return &BookmarksDomain{
 		deps: deps,

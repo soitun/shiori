@@ -6,6 +6,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type DBID int
+
 // DB is interface for accessing and manipulating data in database.
 type DB interface {
 	// WriterDB is the underlying sqlx.DB
@@ -13,6 +15,9 @@ type DB interface {
 
 	// ReaderDB is the underlying sqlx.DB
 	ReaderDB() *sqlx.DB
+
+	// Flavor is the flavor of the database
+	// Flavor() sqlbuilder.Flavor
 
 	// Init initializes the database
 	Init(ctx context.Context) error
@@ -28,6 +33,10 @@ type DB interface {
 
 	// SaveBookmarks saves bookmarks data to database.
 	SaveBookmarks(ctx context.Context, create bool, bookmarks ...BookmarkDTO) ([]BookmarkDTO, error)
+
+	// SaveBookmark saves a single bookmark to database without handling tags.
+	// It only updates the bookmark data in the database.
+	SaveBookmark(ctx context.Context, bookmark Bookmark) error
 
 	// GetBookmarks fetch list of bookmarks based on submitted options.
 	GetBookmarks(ctx context.Context, opts DBGetBookmarksOptions) ([]BookmarkDTO, error)
@@ -57,13 +66,41 @@ type DB interface {
 	DeleteAccount(ctx context.Context, id DBID) error
 
 	// CreateTags creates new tags in database.
-	CreateTags(ctx context.Context, tags ...Tag) error
+	CreateTags(ctx context.Context, tags ...Tag) ([]Tag, error)
+
+	// CreateTag creates a new tag in database.
+	CreateTag(ctx context.Context, tag Tag) (Tag, error)
 
 	// GetTags fetch list of tags and its frequency from database.
-	GetTags(ctx context.Context) ([]TagDTO, error)
+	GetTags(ctx context.Context, opts DBListTagsOptions) ([]TagDTO, error)
 
 	// RenameTag change the name of a tag.
 	RenameTag(ctx context.Context, id int, newName string) error
+
+	// GetTag fetch a tag by its ID.
+	GetTag(ctx context.Context, id int) (TagDTO, bool, error)
+
+	// UpdateTag updates a tag in the database.
+	UpdateTag(ctx context.Context, tag Tag) error
+
+	// DeleteTag removes a tag from the database.
+	DeleteTag(ctx context.Context, id int) error
+
+	// BulkUpdateBookmarkTags updates tags for multiple bookmarks.
+	// It ensures that all bookmarks and tags exist before proceeding.
+	BulkUpdateBookmarkTags(ctx context.Context, bookmarkIDs []int, tagIDs []int) error
+
+	// AddTagToBookmark adds a tag to a bookmark
+	AddTagToBookmark(ctx context.Context, bookmarkID int, tagID int) error
+
+	// RemoveTagFromBookmark removes a tag from a bookmark
+	RemoveTagFromBookmark(ctx context.Context, bookmarkID int, tagID int) error
+
+	// TagExists checks if a tag with the given ID exists in the database
+	TagExists(ctx context.Context, tagID int) (bool, error)
+
+	// BookmarkExists checks if a bookmark with the given ID exists in the database
+	BookmarkExists(ctx context.Context, bookmarkID int) (bool, error)
 }
 
 // DBOrderMethod is the order method for getting bookmarks
@@ -100,4 +137,18 @@ type DBListAccountsOptions struct {
 	Owner bool
 	// Retrieve password content
 	WithPassword bool
+}
+
+type DBTagOrderBy string
+
+const (
+	DBTagOrderByTagName DBTagOrderBy = "name"
+)
+
+// DBListTagsOptions is options for fetching tags from database.
+type DBListTagsOptions struct {
+	BookmarkID        int
+	WithBookmarkCount bool
+	OrderBy           DBTagOrderBy
+	Search            string
 }

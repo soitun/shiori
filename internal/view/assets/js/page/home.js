@@ -81,7 +81,7 @@ var template = `
         <a @click="filterTag('*')">(all tagged)</a>
         <a @click="filterTag('*', true)">(all untagged)</a>
         <a v-for="tag in tags" @click="dialogTagClicked($event, tag)">
-            #{{tag.name}}<span>{{tag.nBookmarks}}</span>
+            #{{tag.name}}<span>{{tag.bookmark_count}}</span>
         </a>
     </custom-dialog>
     <custom-dialog v-bind="dialog"/>
@@ -257,12 +257,16 @@ export default {
 
 					// Fetch tags if requested
 					if (fetchTags) {
-						return fetch(new URL("api/v1/tags", document.baseURI), {
-							headers: {
-								"Content-Type": "application/json",
-								Authorization: "Bearer " + localStorage.getItem("shiori-token"),
+						return fetch(
+							new URL("api/v1/tags?with_bookmark_count=true", document.baseURI),
+							{
+								headers: {
+									"Content-Type": "application/json",
+									Authorization:
+										"Bearer " + localStorage.getItem("shiori-token"),
+								},
 							},
-						});
+						);
 					} else {
 						this.loading = false;
 						throw skipFetchTags;
@@ -273,7 +277,7 @@ export default {
 					return response.json();
 				})
 				.then((json) => {
-					this.tags = json.message;
+					this.tags = json;
 					this.loading = false;
 				})
 				.catch((err) => {
@@ -693,7 +697,7 @@ export default {
 				.then((json) => {
 					this.selection = [];
 					this.editMode = false;
-					json.message.forEach((book) => {
+					json.forEach((book) => {
 						// download ebooks
 						const id = book.id;
 						if (book.hasEbook) {
@@ -795,7 +799,7 @@ export default {
 
 							let faildedUpdateArchives = [];
 							let faildedCreateEbook = [];
-							json.message.forEach((book) => {
+							json.forEach((book) => {
 								var item = items.find((el) => el.id === book.id);
 								this.bookmarks.splice(item.index, 1, book);
 
@@ -888,7 +892,7 @@ export default {
 					};
 
 					this.dialog.loading = true;
-					fetch(new URL("api/bookmarks/tags", document.baseURI), {
+					fetch(new URL("api/v1/bookmarks/tags", document.baseURI), {
 						method: "put",
 						body: JSON.stringify(request),
 						headers: {
@@ -961,16 +965,10 @@ export default {
 							? `"#${data.newName}"`
 							: `#${data.newName}`;
 
-					// Send data
-					var newData = {
-						id: tag.id,
-						name: data.newName,
-					};
-
 					this.dialog.loading = true;
-					fetch(new URL("api/tags", document.baseURI), {
+					fetch(new URL("api/v1/tags/" + tag.id, document.baseURI), {
 						method: "PUT",
-						body: JSON.stringify(newData),
+						body: JSON.stringify({ name: data.newName }),
 						headers: {
 							"Content-Type": "application/json",
 							Authorization: "Bearer " + localStorage.getItem("shiori-token"),
