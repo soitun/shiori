@@ -18,6 +18,11 @@ func init() {
 	if connString == "" {
 		log.Fatal("mysql tests can't run without a MysQL database, set SHIORI_TEST_MYSQL_URL environment variable")
 	}
+
+	connStringMariaDB := os.Getenv("SHIORI_TEST_MARIADB_URL")
+	if connStringMariaDB == "" {
+		log.Fatal("mysql tests can't run without a MariaDB database, set SHIORI_TEST_MARIADB_URL environment variable")
+	}
 }
 
 func mysqlTestDatabaseFactory(envKey string) testDatabaseFactory {
@@ -47,7 +52,7 @@ func mysqlTestDatabaseFactory(envKey string) testDatabaseFactory {
 			return nil, err
 		}
 
-		if _, err := db.Exec("USE " + dbname); err != nil {
+		if _, err := db.ExecContext(ctx, "USE "+dbname); err != nil {
 			return nil, err
 		}
 

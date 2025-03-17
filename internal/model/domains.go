@@ -17,6 +17,10 @@ type BookmarksDomain interface {
 	GetBookmark(ctx context.Context, id DBID) (*BookmarkDTO, error)
 	GetBookmarks(ctx context.Context, ids []int) ([]BookmarkDTO, error)
 	UpdateBookmarkCache(ctx context.Context, bookmark BookmarkDTO, keepMetadata bool, skipExist bool) (*BookmarkDTO, error)
+	BulkUpdateBookmarkTags(ctx context.Context, bookmarkIDs []int, tagIDs []int) error
+	AddTagToBookmark(ctx context.Context, bookmarkID int, tagID int) error
+	RemoveTagFromBookmark(ctx context.Context, bookmarkID int, tagID int) error
+	BookmarkExists(ctx context.Context, id int) (bool, error)
 }
 
 type AuthDomain interface {
@@ -47,9 +51,10 @@ type StorageDomain interface {
 }
 
 type TagsDomain interface {
-	ListTags(ctx context.Context) ([]TagDTO, error)
+	ListTags(ctx context.Context, opts ListTagsOptions) ([]TagDTO, error)
 	CreateTag(ctx context.Context, tag TagDTO) (TagDTO, error)
-	// GetTag(ctx context.Context, id int64) (TagDTO, error)
-	// UpdateTag(ctx context.Context, tag TagDTO) (TagDTO, error)
-	// DeleteTag(ctx context.Context, id int64) error
+	GetTag(ctx context.Context, id int) (TagDTO, error)
+	UpdateTag(ctx context.Context, tag TagDTO) (TagDTO, error)
+	DeleteTag(ctx context.Context, id int) error
+	TagExists(ctx context.Context, id int) (bool, error)
 }
